@@ -12,11 +12,6 @@ import { usePathname } from 'next/navigation';
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata = {
-  title: "LGAMA",
-  description: "Lead generation and Mailing automation",
-};
-
 export default function RootLayout({
   children,
 }: {
