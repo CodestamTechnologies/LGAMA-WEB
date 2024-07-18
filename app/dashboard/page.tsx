@@ -34,7 +34,8 @@ function LeadsTable({ leads }: { leads: Lead[] }) {
 </div>
       <div className="mb-6">
       </div>
-      <div className="overflow-x-auto bg-white bg-opacity-0 rounded-lg shadow">
+      <div className="overflow-auto bg-white bg-opacity-0 rounded-lg shadow max-h[70vh]">
+        <div className='min-w-max'>
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50">
@@ -55,6 +56,7 @@ function LeadsTable({ leads }: { leads: Lead[] }) {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
