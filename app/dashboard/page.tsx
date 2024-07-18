@@ -6,33 +6,47 @@ import axios from 'axios';
 interface Lead {
   name: string;
   email: string;
-  company: string;
   source: string;
+  createdAt: string;
 }
+
+function formatDate(): string {
+  const now = new Date();
+  return now.toLocaleString(); // Formats the current date and time as a readable string
+}
+
+
 
 function LeadsTable({ leads }: { leads: Lead[] }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white">
-        <thead>
-          <tr>
-            <th className="py-2 px-4 bg-gray-200">Name</th>
-            <th className="py-2 px-4 bg-gray-200">Email</th>
-            <th className="py-2 px-4 bg-gray-200">Company</th>
-            <th className="py-2 px-4 bg-gray-200">Source</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leads.map((lead, index) => (
-            <tr key={index}>
-              <td className="py-2 px-4 border-b">{lead.name}</td>
-              <td className="py-2 px-4 border-b">{lead.email}</td>
-              <td className="py-2 px-4 border-b">{lead.company}</td>
-              <td className="py-2 px-4 border-b">{lead.source}</td>
+    <div className="px-4 sm:px-6 md:px-8 lg:px-48 py-8 sm:py-12 lg:py-16">
+    <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+      <h1 className="text-3xl sm:text-3xl font-bold mb-4 sm:mb-0">All leads</h1>
+      <div className="mb-6">
+      </div>
+      <div className="overflow-x-auto bg-white bg-opacity-0 rounded-lg shadow">
+        <table className="w-full">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="py-3 px-4 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial No.</th>
+              <th className="py-3 px-4 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th className="py-3 px-4 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+              <th className="py-3 px-4 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created at</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {leads.map((lead, index) => (
+              <tr key={index}>
+                <td className="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap text-sm text-gray-950">{lead.name}</td>
+                <td className="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap text-sm text-gray-950">{lead.email}</td>
+                <td className="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap text-sm text-gray-950">{lead.source}</td>
+                <td className="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap text-sm text-gray-950">{lead.createdAt}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
     </div>
   );
 }
@@ -65,8 +79,8 @@ export default function Dashboard() {
       const newLeads: Lead[] = emails.map((email: string, index: number) => ({
         name: `Lead ${index + 1}`,
         email: email,
-        company: 'Unknown',
         source: 'Internet',
+        createdAt: formatDate(), // This will show "0 days ago" for new leads
       }));
 
       setLeads(newLeads);
@@ -102,20 +116,20 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen px-4 sm:px-6 md:px-8">
       {isLoading ? (
-        <div className="max-w-2xl w-full px-5 py-8 space-y-7">
-          <h2 className="text-3xl font-bold mb-4 text-center">Scraping data</h2>
+        <div className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-center">Scraping data</h2>
           <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
             <div className="bg-blue-600 h-2.5 rounded-full" style={{width: `${scrapingProgress}%`}}></div>
           </div>
           <p className="text-center">{scrapingProgress}% complete</p>
-          <p className="text-center">Please wait while we gather contact information. This may take a few minutes.</p>
+          <p className="text-center text-sm sm:text-base">Please wait while we gather contact information. This may take a few minutes.</p>
         </div>
       ) : (
-        <div className="max-w-2xl w-full px-5 py-8 space-y-7">
-          <h2 className="text-3xl font-bold mb-4 text-center">Discover New Leads</h2>
-          <p className="mb-6 text-center">Begin by entering the keywords or business category you're targeting.</p>
+        <div className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-center">Discover New Leads</h2>
+          <p className="mb-6 text-center text-sm sm:text-base">Begin by entering the keywords or business category you're targeting.</p>
           
           <div className="space-y-4">
             <div>
