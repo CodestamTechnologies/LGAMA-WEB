@@ -12,10 +12,8 @@ interface Lead {
 
 function formatDate(): string {
   const now = new Date();
-  return now.toLocaleString(); // Formats the current date and time as a readable string
+  return now.toLocaleString();
 }
-
-
 
 function LeadsTable({ leads }: { leads: Lead[] }) {
   return (
@@ -65,6 +63,7 @@ export default function Dashboard() {
   const [location, setLocation] = useState('');
   const [search, setSearch] = useState('');
   const [platform, setPlatform] = useState('');
+  const [contactType, setContactType] = useState('email');
   const [site, setSite] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -82,15 +81,16 @@ export default function Dashboard() {
         query: search,
         location: location,
         platform: platform,
+        contactType: contactType,
         site: site
       });
 
-      const emails = response.data.emails;
-      const newLeads: Lead[] = emails.map((email: string, index: number) => ({
+      const contacts = response.data.contacts;
+      const newLeads: Lead[] = contacts.map((contact: string, index: number) => ({
         name: `Lead ${index + 1}`,
-        email: email,
+        email: contact,
         source: 'Internet',
-        createdAt: formatDate(), // This will show "0 days ago" for new leads
+        createdAt: formatDate(),
       }));
 
       setLeads(newLeads);
@@ -103,7 +103,6 @@ export default function Dashboard() {
     }
   };
 
-  // Simulating progress
   useEffect(() => {
     if (isLoading) {
       const interval = setInterval(() => {
@@ -160,29 +159,68 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <label htmlFor="site" className="block mb-2 text-sm font-medium">
-                Select Email Domain: Choose the email domain to search for
+              <label htmlFor="contactType" className="block mb-2 text-sm font-medium">
+                Select Contact Type: Choose between email or phone number
               </label>
               <select
-                id="site"
+                id="contactType"
                 className="w-full p-2.5 rounded bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-blue-500 focus:border-blue-500"
-                value={site}
-                onChange={(e) => setSite(e.target.value)}
+                value={contactType}
+                onChange={(e) => setContactType(e.target.value)}
               >
-                <option value="">Select an email domain</option>
-                <option value="gmail.com">gmail.com</option>
-                <option value="hotmail.com">hotmail.com</option>
-                <option value="yahoo.com">yahoo.com</option>
-                <option value="outlook.com">outlook.com</option>
-                <option value="aol.com">aol.com</option>
-                <option value="icloud.com">icloud.com</option>
-                <option value="mail.com">mail.com</option>
-                <option value="zoho.com">zoho.com</option>
-                <option value="protonmail.com">protonmail.com</option>
-                <option value="gmx.com">gmx.com</option>
-                <option value="yandex.com">yandex.com</option>
+                <option value="email">Email</option>
+                <option value="phone">Phone Number</option>
               </select>
             </div>
+
+            {contactType === 'email' ? (
+              <div>
+                <label htmlFor="site" className="block mb-2 text-sm font-medium">
+                  Select Email Domain: Choose the email domain to search for
+                </label>
+                <select
+                  id="site"
+                  className="w-full p-2.5 rounded bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-blue-500 focus:border-blue-500"
+                  value={site}
+                  onChange={(e) => setSite(e.target.value)}
+                >
+                  <option value="">Select an email domain</option>
+                  <option value="gmail.com">gmail.com</option>
+                  <option value="hotmail.com">hotmail.com</option>
+                  <option value="yahoo.com">yahoo.com</option>
+                  <option value="outlook.com">outlook.com</option>
+                  <option value="aol.com">aol.com</option>
+                  <option value="icloud.com">icloud.com</option>
+                  <option value="mail.com">mail.com</option>
+                  <option value="zoho.com">zoho.com</option>
+                  <option value="protonmail.com">protonmail.com</option>
+                  <option value="gmx.com">gmx.com</option>
+                  <option value="yandex.com">yandex.com</option>
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label htmlFor="site" className="block mb-2 text-sm font-medium">
+                  Select Country Code: Choose the country code for phone numbers
+                </label>
+                <select
+                  id="site"
+                  className="w-full p-2.5 rounded bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-blue-500 focus:border-blue-500"
+                  value={site}
+                  onChange={(e) => setSite(e.target.value)}
+                >
+                  <option value="">Select a country code</option>
+                  <option value="+1">+1 (USA/Canada)</option>
+                  <option value="+44">+44 (UK)</option>
+                  <option value="+91">+91 (India)</option>
+                  <option value="+61">+61 (Australia)</option>
+                  <option value="+33">+33 (France)</option>
+                  <option value="+49">+49 (Germany)</option>
+                  <option value="+81">+81 (Japan)</option>
+                  <option value="+86">+86 (China)</option>
+                </select>
+              </div>
+            )}
 
             <div>
               <label htmlFor="search" className="block mb-2 text-sm font-medium">
