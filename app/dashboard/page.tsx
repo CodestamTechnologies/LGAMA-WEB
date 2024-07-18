@@ -38,10 +38,10 @@ function LeadsTable({ leads }: { leads: Lead[] }) {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50">
-                <th className="sticky top-0 py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial No.</th>
-                <th className="sticky top-0 py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="sticky top-0 py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
-                <th className="sticky top-0 py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created at</th>
+                <th className="sticky bg-gray-50 top-0 py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serial No.</th>
+                <th className="sticky bg-gray-50 top-0 py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="sticky bg-gray-50 top-0 py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                <th className="sticky bg-gray-50 top-0 py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created at</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">

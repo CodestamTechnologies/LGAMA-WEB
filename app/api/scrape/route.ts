@@ -30,12 +30,13 @@ export async function POST(request: NextRequest) {
         });
 
         const htmlResults = await Promise.all(fetchPromises);
-        console.log(htmlResults)
 
         htmlResults.forEach(html => {
             const $ = cheerio.load(html);
             $('body').text().match(/[a-zA-Z0-9._%+-]+@gmail\.com/g)?.forEach(email => emails.add(email));
         });
+
+        console.log({emails: Array.from(emails)});
 
         return NextResponse.json({ emails: Array.from(emails) });
     } catch (error) {
