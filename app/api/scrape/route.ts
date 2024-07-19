@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         const htmlResults = await Promise.all(fetchPromises);
 
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-        const phoneRegex = new RegExp(`\\${site}[0-9]{10}`, 'g');
+        const phoneRegex = new RegExp(`\\${site}[0-9]{4,13}`, 'g');
 
         htmlResults.forEach(html => {
             const $ = cheerio.load(html);
