@@ -1,18 +1,20 @@
 "use client";
-"use client";
-import {
-  VerticalTimeline,
-  VerticalTimelineElement,
-} from "react-vertical-timeline-component";
-import "react-vertical-timeline-component/style.min.css";
-import { experiencesData } from "@/lib/data";
-import { useTheme } from "@/context/theme-context";
 
 import React from "react";
-import SectionHeading from "./section-heading";
 import { motion } from "framer-motion";
+import SectionHeading from "./section-heading";
 import { useSectionInView } from "@/lib/hooks";
-import { skillsData } from "@/lib/data";
+import { useTheme } from "@/context/theme-context";
+import { experiencesData } from "@/lib/data";
+import { IconBaseProps } from "react-icons";
+
+// Define the type for a single experience item
+interface ExperienceItem {
+  readonly title: string;
+  readonly description: string;
+  readonly icon: React.FunctionComponentElement<IconBaseProps>;
+  readonly date?: string; // Make date optional if it's not always present
+}
 
 export default function About() {
   const { ref } = useSectionInView("About");
@@ -29,45 +31,55 @@ export default function About() {
     >
       <SectionHeading>What is LGAMA?</SectionHeading>
       <p className="mb-3 text-xl">
-    <span className="font-medium">LGAMA</span> is a taylored to collect email addresses available on the internet from social media platforms, specifically tailored for cold outreach. 
+        <span className="font-medium">LGAMA</span> is tailored to collect email
+        addresses available on the internet from social media platforms,
+        specifically designed for cold outreach.
       </p>
 
       <SectionHeading>Cold outreach for collaborations and connections</SectionHeading>
-      <p className="mb-3 text-lg">Example</p>
-      
-      <VerticalTimeline lineColor="">
-        {experiencesData.map((item, index) => (
-          <React.Fragment key={index}>
-            <VerticalTimelineElement
-              contentStyle={{
-                background:
-                  theme === "light" ? "#f3f4f6" : "rgba(255, 255, 255, 0.05)",
-                boxShadow: "none",
-                border: "1px solid rgba(0, 0, 0, 0.05)",
-                textAlign: "left",
-                padding: "0.5rem 2rem",
-              }}
-              contentArrowStyle={{
-                borderRight:
-                  theme === "light"
-                    ? "0.4rem solid #9ca3af"
-                    : "0.4rem solid rgba(255, 255, 255, 0.5)",
-              }}
-              icon={item.icon}
-              iconStyle={{
-                background:
-                  theme === "light" ? "white" : "rgba(255, 255, 255, 0.15)",
-                fontSize: "1rem",
-              }}
-            >
-              <h3 className="font-semibold capitalize">{item.title}</h3>
-              <p className="!mt-1 !font-normal text-gray-700 dark:text-white/75">
-                {item.description}
-              </p>
-            </VerticalTimelineElement>
-          </React.Fragment>
-        ))}
-      </VerticalTimeline>
+      <p className="mb-3 text-lg">Examples</p>
+
+      <Timeline experiencesData={experiencesData} theme={theme} />
     </motion.section>
   );
 }
+
+const TimelineItem: React.FC<{ item: ExperienceItem; index: number }> = ({ item, index }) => {
+  return (
+    <motion.div
+      className="flex flex-col md:flex-row items-center md:items-start mb-10 last:mb-0"
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.2 }}
+    >
+      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 mb-4 md:mb-0 md:mr-4">
+        {item.icon}
+      </div>
+      <div className="flex-1">
+        <motion.div
+          className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-sm"
+          whileHover={{ scale: 1.03 }}
+          transition={{ duration: 0.2 }}
+        >
+          <h3 className="font-semibold capitalize text-lg mb-2">{item.title}</h3>
+          <p className="text-gray-700 dark:text-gray-300">{item.description}</p>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+};
+
+interface TimelineProps {
+  experiencesData: readonly ExperienceItem[];
+  theme: string;
+}
+
+const Timeline: React.FC<TimelineProps> = ({ experiencesData, theme }) => {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {experiencesData.map((item, index) => (
+        <TimelineItem key={index} item={item} index={index} />
+      ))}
+    </div>
+  );
+};
