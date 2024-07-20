@@ -6,14 +6,11 @@ import { links } from "@/lib/data";
 import Link from "next/link";
 import clsx from "clsx";
 import { useActiveSectionContext } from "@/context/active-section-context";
-import { usePathname } from "next/navigation";
 
 export default function Header() {
   const { activeSection, setActiveSection, setTimeOfLastClick } =
     useActiveSectionContext();
-  const path = usePathname();
 
-  if (path!=="/") return null
   return (
     <header className="z-[999] relative">
       <motion.div

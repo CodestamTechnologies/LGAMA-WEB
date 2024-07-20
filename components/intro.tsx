@@ -9,18 +9,16 @@ import { HiDownload } from "react-icons/hi";
 import { FaGithubSquare } from "react-icons/fa";
 import { useSectionInView } from "@/lib/hooks";
 import { useActiveSectionContext } from "@/context/active-section-context";
-import { signIn, useSession } from "next-auth/react";
 
 export default function Intro() {
   const { ref } = useSectionInView("Home", 0.5);
   const { setActiveSection, setTimeOfLastClick } = useActiveSectionContext();
-  const {data} = useSession();
 
   return (
     <section
       ref={ref}
       id="home"
-      className="mb-28 max-w-[50rem] pt-48 text-center sm:mb-0 scroll-mt-[100rem]"
+      className="mb-28 max-w-[50rem] text-center sm:mb-0 scroll-mt-[100rem]"
     >
       {/* <div className="flex items-center justify-center">
         <div className="relative">  
@@ -46,14 +44,14 @@ export default function Intro() {
         initial={{ opacity: 0, y: 100 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <span className="text-sm">#1 Email Capture Solution </span>
+        <span className="text-sm">#1 Email Capture Solution</span>
       </motion.h1>
       <motion.h1
         className="mb-10 mt-4 text-2xl font-medium !leading-[1.5] sm:text-4xl"
         initial={{ opacity: 0, y: 100 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <span className="font-bold">Revolutionize Your Outreach with LGAMA {data?.user?.name}</span>
+        <span className="font-bold">Revolutionize Your Outreach with LGAMA</span>
       </motion.h1>
 
       <motion.h1
@@ -74,13 +72,13 @@ export default function Intro() {
           delay: 0.1,
         }}
       >
-        <button
-          onClick={() => signIn("google", {callbackUrl: "/dashboard"})}
+        <a
+          href="/dashboard"
           className="group bg-gray-900 text-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 hover:bg-gray-950 active:scale-105 transition"
         >
           Get started now{" "}
           <BsArrowRight className="opacity-70 group-hover:translate-x-1 transition" />
-        </button>
+        </a>
 
         <a
           className="group bg-white px-7 py-3 flex items-center gap-2 rounded-full outline-none focus:scale-110 hover:scale-110 active:scale-105 transition cursor-pointer borderBlack dark:bg-white/10"

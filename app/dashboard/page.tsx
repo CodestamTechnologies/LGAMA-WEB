@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useSession } from 'next-auth/react';
 
 interface Lead {
   name: string;
@@ -15,7 +14,6 @@ function formatDate(): string {
   const now = new Date();
   return now.toLocaleString();
 }
-
 
 function LeadsTable({ leads }: { leads: Lead[] }) {
   return (
@@ -62,9 +60,6 @@ function LeadsTable({ leads }: { leads: Lead[] }) {
 }
 
 export default function Dashboard() {
-  const data = useSession({
-    required: true
-  })
   const [location, setLocation] = useState('');
   const [search, setSearch] = useState('');
   const [platform, setPlatform] = useState('');
