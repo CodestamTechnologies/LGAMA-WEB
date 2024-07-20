@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Header from "@/components/header";
 import "./globals.css";
 import { Inter } from "next/font/google";
@@ -12,13 +13,29 @@ import { usePathname } from 'next/navigation';
 
 const inter = Inter({ subsets: ["latin"] });
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isDashboard = pathname === '/dashboard';
+
+  useEffect(() => {
+    // Load the Google Analytics script
+    const script = document.createElement('script');
+    script.src = 'https://www.googletagmanager.com/gtag/js?id=G-HBV68Q2JD9';
+    script.async = true;
+    document.head.appendChild(script);
+
+    // Initialize Google Analytics
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function gtag(...args: any[]) {
+      window.dataLayer.push(args);
+    };
+    window.gtag('js', new Date());
+    window.gtag('config', 'G-HBV68Q2JD9');
+
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
 
   return (
     <html lang="en" className="!scroll-smooth">
