@@ -77,7 +77,7 @@ export default function Dashboard() {
     setScrapingProgress(0);
 
     try {
-      const response = await axios.post('/api/scrape', {
+      const response = await axios.post('/api/maildump', {
         query: search,
         location: location,
         platform: platform,

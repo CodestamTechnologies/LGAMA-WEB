@@ -52,3 +52,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'An error occurred while processing your request' }, { status: 500 });
     }
 }
+
+
+// API Query
+// {
+//     "query": "marketing agencies",
+//     "location": "New York",
+//     "platform": "LinkedIn",
+//     "contactType": "email",
+//     "site": "gmail.com"
+// }

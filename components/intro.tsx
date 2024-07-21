@@ -61,7 +61,10 @@ export default function Intro() {
       >
         <span className="font-bold text-xl">Effortlessly gather email addresses from </span>
         <span className="italic text-xl">Facebook, Instagram, LinkedIn, Pinterest, Yelp, YouTube, TikTok, YellowPages, Twitter, </span>
-        <span className="underline text-xl">and more!</span>.
+        <span className="underline text-xl">and more!<br /></span>.
+        <span className="text-sm">
+        A product of <a href="https://codestam.com"><b><i>Codestam</i></b></a>
+        </span>
       </motion.h1>
 
       <motion.div
