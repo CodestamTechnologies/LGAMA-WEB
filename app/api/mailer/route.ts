@@ -3,9 +3,9 @@ import nodemailer from 'nodemailer';
 
 export async function POST(request: NextRequest) {
     try {
-        const { email, smtpHost, smtpPort, smtpUser, smtpPassword, htmlTemplate } = await request.json();
+        const { email, smtpHost, smtpPort, smtpUser, smtpPassword, subject, htmlTemplate } = await request.json();
 
-        if (!email || !smtpHost || !smtpPort || !smtpUser || !smtpPassword || !htmlTemplate) {
+        if (!email || !smtpHost || !smtpPort || !smtpUser || !smtpPassword || !subject || !htmlTemplate) {
             return NextResponse.json({ error: 'All parameters are required' }, { status: 400 });
         }
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
         const mailOptions = {
             from: smtpUser,
             to: email,
-            subject: 'Your Custom Subject Here',
+            subject: subject,
             html: htmlTemplate,
         };
 
@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
     }
 }
 
-
 // API Query
 // {
 //     "email": "recipient@example.com",
@@ -48,6 +47,6 @@ export async function POST(request: NextRequest) {
 //     "smtpPort": "587",
 //     "smtpUser": "your-smtp-user@example.com",
 //     "smtpPassword": "your-smtp-password",
-//     "htmlTemplate": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /><title>Email</title></head><body><h1>Hello, World!</h1><p>This is a test email.</p></body></html>"
-//   }
-  
+//     "subject": "Your email subject",
+//     "htmlTemplate": "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\" /><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /><title>Email</title></head><body><h1>Hello, World!</h1><p>This is a test email.</p><span className=\"text-sm\">A product of <a href=\"https://codestam.com\"><b><i>Codestam</i></b></a></span></body></html>"
+// }
