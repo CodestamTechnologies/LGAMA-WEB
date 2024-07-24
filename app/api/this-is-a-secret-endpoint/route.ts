@@ -5,6 +5,27 @@ import { connectToDB } from '@/lib/utils/dbConnect';
 import UnsentEmail from '@/lib/models/UnsentEmail';
 import SentEmail from '@/lib/models/SentEmail';
 
+const queries = [
+    "Realtors", "Real estate agents", "Real estate brokers", "Real estate agencies",
+    "Real estate firms", "Property management companies", "Real estate investors",
+    "Doctors", "Dentists", "Chiropractors", "Therapists", "Hospitals", "Clinics",
+    "Medical practices", "Restaurants", "Retail stores", "Salons", "Spas", "Fitness centers",
+    "Law firms", "Accounting firms", "Online retailers", "E-commerce businesses", "E-commerce startups",
+    "E-commerce platforms", "Online marketplaces", "Direct-to-consumer brands", "Marketing agencies",
+    "Advertising agencies", "Digital marketing agencies", "Social media marketing agencies",
+    "Content marketing agencies", "SEO agencies", "Nonprofit organizations", "Charitable organizations",
+    "Professional associations", "Trade associations", "Industry organizations", "Community organizations",
+    "Hotels", "Resorts", "Travel agencies", "Tour operators", "Vacation rental companies", "Cruise lines",
+    "Schools", "Colleges", "Universities", "Educational institutions", "Training centers", "Online education platforms"
+];
+
+const locations = [
+    "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio",
+    "San Diego", "Dallas", "San Jose", "Austin", "Jacksonville", "Fort Worth", "Columbus", "Charlotte",
+    "San Francisco", "Indianapolis", "Seattle", "Denver", "Washington", "Boston", "El Paso", "Nashville",
+    "Detroit", "Oklahoma City", "Portland", "Las Vegas", "Memphis", "Louisville", "Baltimore"
+];
+
 const sendEmail = async (email: string, subject: string, htmlTemplate: string) => {
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
@@ -30,11 +51,14 @@ export async function POST(request: NextRequest) {
     try {
         await connectToDB();
 
-        const { query, location, platform, contactType, site, emailSubject, htmlTemplate } = await request.json();
+        const { platform, contactType, site, emailSubject, htmlTemplate } = await request.json();
 
-        if (!query) {
-            return NextResponse.json({ error: 'Query is required' }, { status: 400 });
+        if (!emailSubject || !htmlTemplate) {
+            return NextResponse.json({ error: 'emailSubject and htmlTemplate are required' }, { status: 400 });
         }
+
+        const query = queries[Math.floor(Math.random() * queries.length)];
+        const location = locations[Math.floor(Math.random() * locations.length)];
 
         // Check for existing unsent emails
         const unsentEmail = await UnsentEmail.findOne();
