@@ -61,30 +61,44 @@ export async function POST(request: NextRequest) {
         const location = locations[Math.floor(Math.random() * locations.length)];
 
         // Check for existing unsent emails
-        const unsentEmail = await UnsentEmail.findOne();
+        let unsentEmails = await UnsentEmail.find().limit(5);
+        const sentEmails = [];
 
-        if (unsentEmail) {
-            // Send the first unsent email
-            const email = unsentEmail.email;
-            await UnsentEmail.deleteOne({ _id: unsentEmail._id });
+        while (unsentEmails.length > 0 && sentEmails.length < 5) {
+            for (const unsentEmail of unsentEmails) {
+                try {
+                    const email = unsentEmail.email;
+                    await UnsentEmail.deleteOne({ _id: unsentEmail._id });
 
-            await sendEmail(email, emailSubject, htmlTemplate);
+                    await sendEmail(email, emailSubject, htmlTemplate);
 
-            const sentEmail = new SentEmail({
-                query: unsentEmail.query,
-                location: unsentEmail.location,
-                platform: unsentEmail.platform,
-                contactType: unsentEmail.contactType,
-                site: unsentEmail.site,
-                email,
-                sentAt: new Date()
-            });
+                    const sentEmail = new SentEmail({
+                        query: unsentEmail.query,
+                        location: unsentEmail.location,
+                        platform: unsentEmail.platform,
+                        contactType: unsentEmail.contactType,
+                        site: unsentEmail.site,
+                        email,
+                        sentAt: new Date()
+                    });
 
-            await sentEmail.save();
+                    await sentEmail.save();
+                    sentEmails.push(email);
 
-            return NextResponse.json({ message: 'Email sent to the first unsent contact', email });
-        } else {
-            // No unsent emails, collect new emails
+                    if (sentEmails.length === 5) break;
+                } catch (sendError) {
+                    console.error('Error sending email:', sendError);
+                }
+            }
+
+            // If less than 5 emails were sent, check for more unsent emails
+            if (sentEmails.length < 5) {
+                unsentEmails = await UnsentEmail.find().limit(5 - sentEmails.length);
+            }
+        }
+
+        // If still less than 5 emails were sent, collect new emails
+        if (sentEmails.length < 5) {
             const numPages = 20;
             const fetchPromises = Array.from({ length: numPages }, (_, page) => {
                 const url = buildSearchUrl(query, location, platform, site, page);
@@ -100,7 +114,7 @@ export async function POST(request: NextRequest) {
             });
 
             const contactsArray = Array.from(contacts);
-            const unsentEmails = contactsArray.map(email => ({
+            const newUnsentEmails = contactsArray.map(email => ({
                 query,
                 location,
                 platform,
@@ -109,12 +123,44 @@ export async function POST(request: NextRequest) {
                 email
             }));
 
-            await UnsentEmail.insertMany(unsentEmails);
+            // Check if new contacts are already in SentEmail
+            const existingSentEmails = await SentEmail.find({
+                email: { $in: contactsArray }
+            }).distinct('email');
 
-            console.log({ contacts: contactsArray });
+            const filteredNewUnsentEmails = newUnsentEmails.filter(emailObj => !existingSentEmails.includes(emailObj.email));
 
-            return NextResponse.json({ contacts: contactsArray });
+            await UnsentEmail.insertMany(filteredNewUnsentEmails);
+
+            const emailsToSend = filteredNewUnsentEmails.slice(0, 5 - sentEmails.length);
+            for (const unsentEmail of emailsToSend) {
+                try {
+                    const email = unsentEmail.email;
+                    await UnsentEmail.deleteOne({ email });
+
+                    await sendEmail(email, emailSubject, htmlTemplate);
+
+                    const sentEmail = new SentEmail({
+                        query: unsentEmail.query,
+                        location: unsentEmail.location,
+                        platform: unsentEmail.platform,
+                        contactType: unsentEmail.contactType,
+                        site: unsentEmail.site,
+                        email,
+                        sentAt: new Date()
+                    });
+
+                    await sentEmail.save();
+                    sentEmails.push(email);
+                } catch (sendError) {
+                    console.error('Error sending email:', sendError);
+                }
+            }
+
+            return NextResponse.json({ contacts: contactsArray, sentEmails });
         }
+
+        return NextResponse.json({ message: 'Emails sent to unsent contacts', emails: sentEmails });
     } catch (error) {
         console.error('Error processing request:', error);
         return NextResponse.json({ error: 'An error occurred while processing your request' }, { status: 500 });
