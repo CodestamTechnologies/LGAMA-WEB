@@ -1,35 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+// Function to validate the input
+function validateInput(email: string, smtpHost: string, smtpPort: string, smtpUser: string, smtpPassword: string, subject: string, htmlTemplate: string): boolean {
+    return !!email && !!smtpHost && !!smtpPort && !!smtpUser && !!smtpPassword && !!subject && !!htmlTemplate;
+}
+
+// Function to create the Nodemailer transporter
+function createTransporter(smtpHost: string, smtpPort: string, smtpUser: string, smtpPassword: string) {
+    return nodemailer.createTransport({
+        host: smtpHost,
+        port: parseInt(smtpPort, 10),
+        secure: smtpPort === '465', // true for 465, false for other ports
+        auth: {
+            user: smtpUser,
+            pass: smtpPassword,
+        },
+    });
+}
+
+// Function to send the email
+async function sendEmail(transporter: nodemailer.Transporter, email: string, smtpUser: string, subject: string, htmlTemplate: string) {
+    const mailOptions = {
+        from: smtpUser,
+        to: email,
+        subject: subject,
+        html: htmlTemplate,
+    };
+
+    return transporter.sendMail(mailOptions);
+}
+
 export async function POST(request: NextRequest) {
     try {
         const { email, smtpHost, smtpPort, smtpUser, smtpPassword, subject, htmlTemplate } = await request.json();
 
-        if (!email || !smtpHost || !smtpPort || !smtpUser || !smtpPassword || !subject || !htmlTemplate) {
+        if (!validateInput(email, smtpHost, smtpPort, smtpUser, smtpPassword, subject, htmlTemplate)) {
             return NextResponse.json({ error: 'All parameters are required' }, { status: 400 });
         }
 
-        // Create a nodemailer transporter using the provided SMTP credentials
-        const transporter = nodemailer.createTransport({
-            host: smtpHost,
-            port: parseInt(smtpPort, 10),
-            secure: smtpPort === '465', // true for 465, false for other ports
-            auth: {
-                user: smtpUser,
-                pass: smtpPassword,
-            },
-        });
-
-        // Define the email options
-        const mailOptions = {
-            from: smtpUser,
-            to: email,
-            subject: subject,
-            html: htmlTemplate,
-        };
-
-        // Send the email
-        const info = await transporter.sendMail(mailOptions);
+        const transporter = createTransporter(smtpHost, smtpPort, smtpUser, smtpPassword);
+        const info = await sendEmail(transporter, email, smtpUser, subject, htmlTemplate);
 
         console.log('Email sent:', info.response);
 
