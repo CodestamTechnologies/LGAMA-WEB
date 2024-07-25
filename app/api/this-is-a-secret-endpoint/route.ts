@@ -1,120 +1,118 @@
 import { NextRequest, NextResponse } from 'next/server';
-import nodemailer, { Transporter } from 'nodemailer';
+import nodemailer from 'nodemailer';
 import { buildSearchUrl, fetchSearchResults, extractContacts } from '../maildump/route';
 import { connectToDB } from '@/lib/utils/dbConnect';
-import UnsentEmail, { IUnsentEmail } from '@/lib/models/UnsentEmail';
-import SentEmail, { ISentEmail } from '@/lib/models/SentEmail';
+import UnsentEmail from '@/lib/models/UnsentEmail';
+import SentEmail from '@/lib/models/SentEmail';
 
-export const maxDuration = 30;
-export const dynamic = 'force-dynamic';
-
-interface RequestBody {
-    platform: string;
-    contactType: string;
-    site: string;
-    emailSubject: string;
-    htmlTemplate: string;
-}
-
-interface EmailOptions {
-    from: string;
-    to: string;
-    subject: string;
-    html: string;
-}
-
-const queries: string[] = [
-    // ... (keep the existing array)
+const queries = [
+    "Realtors", "Real estate agents", "Real estate brokers", "Real estate agencies",
+    "Real estate firms", "Property management companies", "Real estate investors",
+    "Doctors", "Dentists", "Chiropractors", "Therapists", "Hospitals", "Clinics",
+    "Medical practices", "Restaurants", "Retail stores", "Salons", "Spas", "Fitness centers",
+    "Law firms", "Accounting firms", "Online retailers", "E-commerce businesses", "E-commerce startups",
+    "E-commerce platforms", "Online marketplaces", "Direct-to-consumer brands", "Marketing agencies",
+    "Advertising agencies", "Digital marketing agencies", "Social media marketing agencies",
+    "Content marketing agencies", "SEO agencies", "Nonprofit organizations", "Charitable organizations",
+    "Professional associations", "Trade associations", "Industry organizations", "Community organizations",
+    "Hotels", "Resorts", "Travel agencies", "Tour operators", "Vacation rental companies", "Cruise lines",
+    "Schools", "Colleges", "Universities", "Educational institutions", "Training centers", "Online education platforms"
 ];
 
-const locations: string[] = [
-    // ... (keep the existing array)
+const locations = [
+    "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", "San Antonio",
+    "San Diego", "Dallas", "San Jose", "Austin", "Jacksonville", "Fort Worth", "Columbus", "Charlotte",
+    "San Francisco", "Indianapolis", "Seattle", "Denver", "Washington", "Boston", "El Paso", "Nashville",
+    "Detroit", "Oklahoma City", "Portland", "Las Vegas", "Memphis", "Louisville", "Baltimore"
 ];
 
-const transporter: Transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT!, 10),
-    secure: process.env.SMTP_PORT === '465',
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-    },
-});
+const sendEmail = async (email: string, subject: string, htmlTemplate: string) => {
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT!, 10),
+        secure: process.env.SMTP_PORT === '465',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASSWORD,
+        },
+    });
 
-const sendEmail = async (email: string, subject: string, htmlTemplate: string): Promise<void> => {
-    const mailOptions: EmailOptions = {
-        from: process.env.SMTP_USER!,
+    const mailOptions = {
+        from: process.env.SMTP_USER,
         to: email,
         subject: subject,
         html: htmlTemplate,
     };
 
-    await transporter.sendMail(mailOptions);
+    return transporter.sendMail(mailOptions);
 };
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest) {
     try {
         await connectToDB();
 
-        const { platform, contactType, site, emailSubject, htmlTemplate }: RequestBody = await request.json();
+        const { platform, contactType, site, emailSubject, htmlTemplate } = await request.json();
 
         if (!emailSubject || !htmlTemplate) {
             return NextResponse.json({ error: 'emailSubject and htmlTemplate are required' }, { status: 400 });
         }
 
-        const query: string = queries[Math.floor(Math.random() * queries.length)];
-        const location: string = locations[Math.floor(Math.random() * locations.length)];
+        const query = queries[Math.floor(Math.random() * queries.length)];
+        const location = locations[Math.floor(Math.random() * locations.length)];
 
-        const unsentEmails = await UnsentEmail.find().limit(5).lean();
-
+        const unsentEmails = await UnsentEmail.find().limit(5);
         if (unsentEmails.length > 0) {
-            const sentEmails: string[] = [];
-            const emailsToSend = [];
-            const sentEmailsCheck = await SentEmail.find({ email: { $in: unsentEmails.map(ue => ue.email) } }, 'email').lean();
-            const sentEmailSet: Set<string> = new Set(sentEmailsCheck.map(se => se.email));
+            const emailPromises = unsentEmails.map(async (unsentEmail) => {
+                const email = unsentEmail.email;
 
-            for (const unsentEmail of unsentEmails) {
-                if (!sentEmailSet.has(unsentEmail.email)) {
-                    emailsToSend.push(unsentEmail);
-                }
-            }
+                // Delete the unsent email and send it
+                await UnsentEmail.deleteOne({ id: unsentEmail.id });
+                await sendEmail(email, emailSubject, htmlTemplate);
 
-            const sendPromises: Promise<void>[] = emailsToSend.map(async (emailToSend) => {
-                await UnsentEmail.deleteOne({ _id: emailToSend._id });
-                await sendEmail(emailToSend.email, emailSubject, htmlTemplate);
-                const sentEmail: ISentEmail = new SentEmail({
-                    ...emailToSend,
+                // Create and save the sent email record
+                const sentEmail = new SentEmail({
+                    query: unsentEmail.query,
+                    location: unsentEmail.location,
+                    platform: unsentEmail.platform,
+                    contactType: unsentEmail.contactType,
+                    site: unsentEmail.site,
+                    email,
                     sentAt: new Date()
                 });
                 await sentEmail.save();
-                sentEmails.push(emailToSend.email);
+
+                return email;
             });
 
-            await Promise.all(sendPromises);
+            const sentEmails = await Promise.all(emailPromises);
 
-            return NextResponse.json({ message: `Emails sent to ${sentEmails.length} contacts`, emails: sentEmails });
+            return NextResponse.json({ message: 'Emails sent to up to 5 unsent contacts', emails: sentEmails });
         } else {
-            const numPages: number = 10;
-            const fetchPromises: Promise<string>[] = Array.from({ length: numPages }, (_, page) => {
-                const url: string = buildSearchUrl(query, location, platform, site, page);
+            // No unsent emails, collect new emails
+            const numPages = 20;
+            const fetchPromises = Array.from({ length: numPages }, (_, page) => {
+                const url = buildSearchUrl(query, location, platform, site, page);
                 return fetchSearchResults(url);
             });
 
-            const htmlResults: string[] = await Promise.all(fetchPromises);
-            const contacts: Set<string> = new Set<string>();
+            const htmlResults = await Promise.all(fetchPromises);
+            const contacts = new Set<string>();
 
             htmlResults.forEach(html => {
                 const extractedContacts = extractContacts(html, contactType, site);
                 extractedContacts.forEach(contact => contacts.add(contact));
             });
 
-            const contactsArray: string[] = Array.from(contacts);
+            const contactsArray = Array.from(contacts);
 
-            const sentEmails = await SentEmail.find({ email: { $in: contactsArray } }, 'email').lean();
-            const sentEmailSet: Set<string> = new Set(sentEmails.map(se => se.email));
-            const newContacts: string[] = contactsArray.filter(email => !sentEmailSet.has(email));
+            // Check if emails are already in SentEmails collection
+            const existingSentEmails = await SentEmail.find({ email: { $in: contactsArray } }, 'email');
+            const sentEmailSet = new Set(existingSentEmails.map(doc => doc.email));
 
-            const unsentEmails: Partial<IUnsentEmail>[] = newContacts.map(email => ({
+            const newContacts = contactsArray.filter(email => !sentEmailSet.has(email));
+
+
+            const unsentEmails = newContacts.map(email => ({
                 query,
                 location,
                 platform,
@@ -127,7 +125,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
                 await UnsentEmail.insertMany(unsentEmails);
             }
 
-            return NextResponse.json({ contacts: newContacts });
+            console.log({ contacts: newContacts });
+
+            return NextResponse.json({ contacts: contactsArray });
         }
     } catch (error) {
         console.error('Error processing request:', error);
