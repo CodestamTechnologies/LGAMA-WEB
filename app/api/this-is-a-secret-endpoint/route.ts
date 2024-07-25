@@ -5,10 +5,8 @@ import { connectToDB } from '@/lib/utils/dbConnect';
 import UnsentEmail from '@/lib/models/UnsentEmail';
 import SentEmail from '@/lib/models/SentEmail';
 
-
 export const maxDuration = 60; // This function can run for a maximum of 5 seconds
 export const dynamic = 'force-dynamic';
-
 
 const queries = [
     "Realtors", "Real estate agents", "Real estate brokers", "Real estate agencies",
@@ -31,7 +29,25 @@ const locations = [
     "Detroit", "Oklahoma City", "Portland", "Las Vegas", "Memphis", "Louisville", "Baltimore"
 ];
 
-const sendEmail = async (email: string, subject: string, htmlTemplate: string) => {
+interface EmailDetails {
+    _id?: any;
+    query: string;
+    location: string;
+    platform: string;
+    contactType: string;
+    site: string;
+    email: string;
+}
+
+interface RequestBody {
+    platform: string;
+    contactType: string;
+    site: string;
+    emailSubject: string;
+    htmlTemplate: string;
+}
+
+const sendEmail = async (email: string, subject: string, htmlTemplate: string): Promise<void> => {
     const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT!, 10),
@@ -49,14 +65,33 @@ const sendEmail = async (email: string, subject: string, htmlTemplate: string) =
         html: htmlTemplate,
     };
 
-    return transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
 };
 
-export async function POST(request: NextRequest) {
+const processEmailSending = async (unsentEmails: EmailDetails[], emailSubject: string, htmlTemplate: string, sentEmails: string[]): Promise<void> => {
+    await Promise.all(unsentEmails.map(async (unsentEmail) => {
+        try {
+            const email = unsentEmail.email;
+            await UnsentEmail.deleteOne({ _id: unsentEmail._id });
+            await sendEmail(email, emailSubject, htmlTemplate);
+
+            const sentEmail = new SentEmail({
+                ...unsentEmail,
+                sentAt: new Date(),
+            });
+
+            await sentEmail.save();
+            sentEmails.push(email);
+        } catch (sendError) {
+            console.error('Error sending email:', sendError);
+        }
+    }));
+};
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
         await connectToDB();
-
-        const { platform, contactType, site, emailSubject, htmlTemplate } = await request.json();
+        const { platform, contactType, site, emailSubject, htmlTemplate }: RequestBody = await request.json();
 
         if (!emailSubject || !htmlTemplate) {
             return NextResponse.json({ error: 'emailSubject and htmlTemplate are required' }, { status: 400 });
@@ -65,102 +100,31 @@ export async function POST(request: NextRequest) {
         const query = queries[Math.floor(Math.random() * queries.length)];
         const location = locations[Math.floor(Math.random() * locations.length)];
 
-        // Check for existing unsent emails
-        let unsentEmails = await UnsentEmail.find().limit(5);
-        const sentEmails = [];
+        let unsentEmails: EmailDetails[] = await UnsentEmail.find().limit(5);
+        const sentEmails: string[] = [];
 
-        while (unsentEmails.length > 0 && sentEmails.length < 5) {
-            for (const unsentEmail of unsentEmails) {
-                try {
-                    const email = unsentEmail.email;
-                    await UnsentEmail.deleteOne({ _id: unsentEmail._id });
+        await processEmailSending(unsentEmails, emailSubject, htmlTemplate, sentEmails);
 
-                    await sendEmail(email, emailSubject, htmlTemplate);
-
-                    const sentEmail = new SentEmail({
-                        query: unsentEmail.query,
-                        location: unsentEmail.location,
-                        platform: unsentEmail.platform,
-                        contactType: unsentEmail.contactType,
-                        site: unsentEmail.site,
-                        email,
-                        sentAt: new Date()
-                    });
-
-                    await sentEmail.save();
-                    sentEmails.push(email);
-
-                    if (sentEmails.length === 5) break;
-                } catch (sendError) {
-                    console.error('Error sending email:', sendError);
-                }
-            }
-
-            // If less than 5 emails were sent, check for more unsent emails
-            if (sentEmails.length < 5) {
-                unsentEmails = await UnsentEmail.find().limit(5 - sentEmails.length);
-            }
-        }
-
-        // If still less than 5 emails were sent, collect new emails
         if (sentEmails.length < 5) {
             const numPages = 20;
-            const fetchPromises = Array.from({ length: numPages }, (_, page) => {
-                const url = buildSearchUrl(query, location, platform, site, page);
-                return fetchSearchResults(url);
-            });
-
+            const fetchPromises = Array.from({ length: numPages }, (_, page) => fetchSearchResults(buildSearchUrl(query, location, platform, site, page)));
             const htmlResults = await Promise.all(fetchPromises);
-            const contacts = new Set<string>();
 
-            htmlResults.forEach(html => {
-                const extractedContacts = extractContacts(html, contactType, site);
-                extractedContacts.forEach(contact => contacts.add(contact));
-            });
+            const contacts = new Set<string>();
+            htmlResults.forEach(html => extractContacts(html, contactType, site).forEach(contact => contacts.add(contact)));
 
             const contactsArray = Array.from(contacts);
-            const newUnsentEmails = contactsArray.map(email => ({
-                query,
-                location,
-                platform,
-                contactType,
-                site,
-                email
+            const newUnsentEmails: EmailDetails[] = contactsArray.map(email => ({
+                query, location, platform, contactType, site, email
             }));
 
-            // Check if new contacts are already in SentEmail
-            const existingSentEmails = await SentEmail.find({
-                email: { $in: contactsArray }
-            }).distinct('email');
-
+            const existingSentEmails: string[] = await SentEmail.find({ email: { $in: contactsArray } }).distinct('email');
             const filteredNewUnsentEmails = newUnsentEmails.filter(emailObj => !existingSentEmails.includes(emailObj.email));
 
             await UnsentEmail.insertMany(filteredNewUnsentEmails);
 
             const emailsToSend = filteredNewUnsentEmails.slice(0, 5 - sentEmails.length);
-            for (const unsentEmail of emailsToSend) {
-                try {
-                    const email = unsentEmail.email;
-                    await UnsentEmail.deleteOne({ email });
-
-                    await sendEmail(email, emailSubject, htmlTemplate);
-
-                    const sentEmail = new SentEmail({
-                        query: unsentEmail.query,
-                        location: unsentEmail.location,
-                        platform: unsentEmail.platform,
-                        contactType: unsentEmail.contactType,
-                        site: unsentEmail.site,
-                        email,
-                        sentAt: new Date()
-                    });
-
-                    await sentEmail.save();
-                    sentEmails.push(email);
-                } catch (sendError) {
-                    console.error('Error sending email:', sendError);
-                }
-            }
+            await processEmailSending(emailsToSend, emailSubject, htmlTemplate, sentEmails);
 
             return NextResponse.json({ contacts: contactsArray, sentEmails });
         }
