@@ -5,6 +5,11 @@ import { connectToDB } from '@/lib/utils/dbConnect';
 import UnsentEmail from '@/lib/models/UnsentEmail';
 import SentEmail from '@/lib/models/SentEmail';
 
+
+export const maxDuration = 60; // This function can run for a maximum of 5 seconds
+export const dynamic = 'force-dynamic';
+
+
 const queries = [
     "Realtors", "Real estate agents", "Real estate brokers", "Real estate agencies",
     "Real estate firms", "Property management companies", "Real estate investors",
