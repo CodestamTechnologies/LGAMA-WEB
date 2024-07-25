@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         const query = queries[Math.floor(Math.random() * queries.length)];
         const location = locations[Math.floor(Math.random() * locations.length)];
 
-        const unsentEmails = await UnsentEmail.find().limit(5);
+        const unsentEmails = await UnsentEmail.find().limit(10);
         if (unsentEmails.length > 0) {
             const emailPromises = unsentEmails.map(async (unsentEmail) => {
                 const email = unsentEmail.email;
