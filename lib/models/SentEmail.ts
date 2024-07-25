@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-interface ISentEmail extends Document {
+export interface ISentEmail extends Document {
     query: string;
     location: string;
     platform: string;
